@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Booking Restrictions – Partner Backend</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --border: #dde1e8;
+    --accent: #1a3560;
+    --accent-light: #2550a0;
+    --accent-muted: #e8edf7;
+    --text: #1c1c1c;
+    --text-muted: #6b6b6b;
+    --radius: 10px;
+    --shadow: 0 2px 16px rgba(0,0,0,0.08);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 48px 24px;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 36px 40px;
+    width: 100%;
+    max-width: 860px;
+    box-shadow: var(--shadow);
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .panel-title { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+  .panel-subtitle { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+
+  .badge {
+    background: var(--accent-muted);
+    color: var(--accent-light);
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+
+  .section { margin-bottom: 26px; }
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.9px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  .shop-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .shop-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 11px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 9px;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .shop-item:hover { border-color: var(--accent-light); background: var(--accent-muted); }
+  .shop-item.active { border-color: var(--accent); background: var(--accent-muted); }
+  .shop-item input[type="checkbox"] { display: none; }
+
+  .cb-box {
+    width: 17px; height: 17px;
+    border-radius: 4px;
+    border: 2px solid #c8cdd8;
+    background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+
+  .shop-item.active .cb-box { background: var(--accent); border-color: var(--accent); }
+  .cb-box svg { display: none; }
+  .shop-item.active .cb-box svg { display: block; }
+
+  .shop-name { font-size: 13px; font-weight: 500; line-height: 1.3; }
+  .shop-num { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+  .select-actions { display: flex; gap: 10px; margin-top: 8px; }
+  .link-btn {
+    background: none; border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px; font-weight: 500;
+    cursor: pointer; padding: 0;
+    color: var(--accent-light);
+  }
+  .link-btn:hover { text-decoration: underline; }
+  .link-btn.muted { color: var(--text-muted); }
+
+  .date-row { display: flex; align-items: center; gap: 12px; }
+  .date-field { position: relative; }
+
+  .date-field input[type="date"] {
+    padding: 10px 38px 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--text);
+    background: #fff;
+    outline: none;
+    width: 170px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .date-field input[type="date"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(26,53,96,0.09);
+  }
+
+  .cal-icon {
+    position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
+    color: #b0b8c8; pointer-events: none;
+  }
+
+  .date-sep { font-size: 12.5px; color: var(--text-muted); font-weight: 500; }
+
+  select {
+    padding: 10px 36px 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13.5px;
+    color: var(--text);
+    background: #fff;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 13px center;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(26,53,96,0.09);
+  }
+
+  .restriction-fields {
+    background: #f7f8fb;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-top: 14px;
+    display: none;
+  }
+
+  .restriction-fields.visible { display: block; animation: fadeIn 0.2s ease; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .fields-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+
+  .fields-grid.two-col { grid-template-columns: repeat(2, 1fr); }
+
+  .field-group { display: flex; flex-direction: column; gap: 6px; }
+  .field-label { font-size: 11.5px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.3px; }
+
+  .field-input {
+    padding: 9px 13px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13.5px;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+
+  .field-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,53,96,0.09); }
+
+  .checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .check-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 8px 10px;
+    border-radius: 7px;
+    border: 1.5px solid var(--border);
+    background: #fff;
+    transition: all 0.12s;
+  }
+
+  .check-row:hover { border-color: var(--accent-light); background: var(--accent-muted); }
+
+  .check-row input[type="checkbox"] {
+    width: 15px; height: 15px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .hint {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-top: 6px;
+    font-style: italic;
+  }
+
+  /* JSON Preview */
+  .json-panel {
+    background: #111827;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 28px;
+    display: none;
+    animation: fadeIn 0.25s ease;
+  }
+
+  .json-panel.visible { display: block; }
+
+  .json-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    background: #1f2937;
+    border-bottom: 1px solid #374151;
+  }
+
+  .json-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #9ca3af;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .json-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
+
+  .json-actions { display: flex; gap: 8px; }
+
+  .json-btn {
+    padding: 5px 13px;
+    border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid #374151;
+    background: #111827;
+    color: #9ca3af;
+    display: flex; align-items: center; gap: 5px;
+    transition: all 0.15s;
+  }
+
+  .json-btn:hover { background: #374151; color: #e5e7eb; }
+  .json-btn.download { border-color: #166534; background: #14532d; color: #4ade80; }
+  .json-btn.download:hover { background: #166534; color: #86efac; }
+
+  .json-body {
+    padding: 20px 22px;
+    overflow-x: auto;
+  }
+
+  pre {
+    font-family: 'DM Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.75;
+    color: #e5e7eb;
+    white-space: pre;
+  }
+
+  .j-key { color: #93c5fd; }
+  .j-str { color: #86efac; }
+  .j-num { color: #fbbf24; }
+  .j-bool { color: #f472b6; }
+  .j-null { color: #9ca3af; }
+
+  .footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  .summary { font-size: 12.5px; color: var(--text-muted); }
+  .summary strong { color: var(--text); font-weight: 600; }
+
+  .btn-group { display: flex; gap: 10px; }
+
+  .btn {
+    padding: 11px 22px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1.5px solid var(--border);
+  }
+
+  .btn-ghost:hover { border-color: #aaa; color: var(--text); }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .btn-primary:hover {
+    background: var(--accent-light);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(26,53,96,0.3);
+  }
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <div class="panel-header">
+    <div>
+      <div class="panel-title">Request Booking Restriction</div>
+      <div class="panel-subtitle">Select one or more shops and configure the restriction for a time period</div>
+    </div>
+    <span class="badge">Partner Backend</span>
+  </div>
+
+  <!-- Shops -->
+  <div class="section">
+    <div class="section-label">Shops</div>
+    <div class="shop-grid">
+      <div class="shop-item" onclick="toggleShop(this, 'Sport Brugger 1')">
+        <span class="cb-box"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <div><div class="shop-name">Sport Brugger</div><div class="shop-num">Shop 1</div></div>
+      </div>
+      <div class="shop-item" onclick="toggleShop(this, 'Sport Brugger 2')">
+        <span class="cb-box"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <div><div class="shop-name">Sport Brugger</div><div class="shop-num">Shop 2</div></div>
+      </div>
+      <div class="shop-item" onclick="toggleShop(this, 'Sport Brugger 3')">
+        <span class="cb-box"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <div><div class="shop-name">Sport Brugger</div><div class="shop-num">Shop 3</div></div>
+      </div>
+      <div class="shop-item" onclick="toggleShop(this, 'Sport Brugger 4')">
+        <span class="cb-box"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <div><div class="shop-name">Sport Brugger</div><div class="shop-num">Shop 4</div></div>
+      </div>
+    </div>
+    <div class="select-actions">
+      <button class="link-btn" onclick="selectAll()">Select all</button>
+      <span style="color:#dde1e8">|</span>
+      <button class="link-btn muted" onclick="deselectAll()">Clear selection</button>
+    </div>
+  </div>
+
+  <!-- Date Range -->
+  <div class="section">
+    <div class="section-label">Date Range</div>
+    <div class="date-row">
+      <div class="date-field">
+        <input type="date" id="dateFrom" value="2026-02-13">
+        <span class="cal-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        </span>
+      </div>
+      <div class="date-sep">until</div>
+      <div class="date-field">
+        <input type="date" id="dateTo" value="2026-02-20">
+        <span class="cal-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Restriction Type -->
+  <div class="section">
+    <div class="section-label">Restriction Type</div>
+    <select id="restrictionType" onchange="updateFields()">
+      <option value="">— Select type —</option>
+      <option value="stop_sales">Stop Sales</option>
+      <option value="stop_sale_product">Stop Sale of Product</option>
+      <option value="booking_restriction">Booking Restriction</option>
+      <option value="merchant_option">Merchant Option Override</option>
+    </select>
+
+    <!-- STOP SALES -->
+    <div class="restriction-fields" id="fields-stop_sales">
+      <p style="font-size:13.5px; color: var(--text-muted);">
+        All sales will be stopped for the selected shops during this period. No additional configuration required.
+      </p>
+    </div>
+
+    <!-- STOP SALE OF PRODUCT -->
+    <div class="restriction-fields" id="fields-stop_sale_product">
+      <div class="fields-grid two-col">
+        <div class="field-group">
+          <label class="field-label">Product Definition</label>
+          <select class="field-input" style="appearance:none; background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\"); background-repeat:no-repeat; background-position: right 13px center;">
+            <option value="">— Select product —</option>
+            <option>Ski Set – Adult</option>
+            <option>Ski Set – Junior</option>
+            <option>Snowboard Set – Adult</option>
+            <option>Snowboard Set – Junior</option>
+            <option>Ski Boots Only</option>
+            <option>Helmet</option>
+            <option>Poles</option>
+          </select>
+        </div>
+      </div>
+      <p class="hint">Only the selected product will be restricted for sale during this period.</p>
+    </div>
+
+    <!-- BOOKING RESTRICTION -->
+    <div class="restriction-fields" id="fields-booking_restriction">
+      <div class="fields-grid">
+        <div class="field-group">
+          <label class="field-label">Min. Lead Time of Booking *1)</label>
+          <input class="field-input" type="number" min="0" placeholder="e.g. 2 (days)">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Min. Booking Period *2)</label>
+          <input class="field-input" type="number" min="1" placeholder="e.g. 3 (days)">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Max. Booking Period *3)</label>
+          <input class="field-input" type="number" min="1" placeholder="e.g. 14 (days)">
+        </div>
+      </div>
+      <div style="margin-top:12px; display:flex; flex-direction:column; gap:3px;">
+        <p class="hint">*1) Minimum days before rental start a booking must be placed.</p>
+        <p class="hint">*2) Minimum rental duration in days.</p>
+        <p class="hint">*3) Maximum rental duration in days.</p>
+      </div>
+    </div>
+
+    <!-- MERCHANT OPTION OVERRIDE -->
+    <div class="restriction-fields" id="fields-merchant_option">
+      <div class="section-label" style="margin-bottom:12px;">Mandatory Person Data Fields</div>
+      <div class="checkbox-group">
+        <label class="check-row"><input type="checkbox"> First name mandatory</label>
+        <label class="check-row"><input type="checkbox"> Last name mandatory</label>
+        <label class="check-row"><input type="checkbox"> Birthday mandatory</label>
+        <label class="check-row"><input type="checkbox"> Weight mandatory</label>
+        <label class="check-row"><input type="checkbox"> Height mandatory</label>
+        <label class="check-row"><input type="checkbox"> Shoe size mandatory</label>
+        <label class="check-row"><input type="checkbox"> Skill level mandatory</label>
+      </div>
+      <p class="hint" style="margin-top:12px;">These fields will be required from customers during checkout for the selected shops and period.</p>
+    </div>
+  </div>
+
+  <!-- JSON Preview -->
+  <div class="json-panel" id="jsonPanel">
+    <div class="json-topbar">
+      <div class="json-title">
+        <span class="json-dot"></span>
+        restriction_request.json
+      </div>
+      <div class="json-actions">
+        <button class="json-btn" onclick="copyJSON()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          Copy
+        </button>
+        <button class="json-btn download" onclick="downloadJSON()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Download .json
+        </button>
+      </div>
+    </div>
+    <div class="json-body">
+      <pre id="jsonContent"></pre>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="summary" id="summary">
+      <strong>0 shops</strong> selected &nbsp;·&nbsp; No restriction type chosen
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-ghost" onclick="resetForm()">Cancel</button>
+      <button class="btn btn-primary" onclick="handleRequest()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+        Request Restriction
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const selected = new Set();
+  const shopKeys = ['Sport Brugger 1','Sport Brugger 2','Sport Brugger 3','Sport Brugger 4'];
+  let lastJSON = null;
+
+  function toggleShop(el, name) {
+    if (selected.has(name)) { selected.delete(name); el.classList.remove('active'); }
+    else { selected.add(name); el.classList.add('active'); }
+    updateSummary();
+  }
+
+  function selectAll() {
+    document.querySelectorAll('.shop-item').forEach((el, i) => {
+      el.classList.add('active');
+      selected.add(shopKeys[i]);
+    });
+    updateSummary();
+  }
+
+  function deselectAll() {
+    document.querySelectorAll('.shop-item').forEach(el => el.classList.remove('active'));
+    selected.clear();
+    updateSummary();
+  }
+
+  function updateFields() {
+    document.querySelectorAll('.restriction-fields').forEach(f => f.classList.remove('visible'));
+    const val = document.getElementById('restrictionType').value;
+    if (val) { const el = document.getElementById('fields-' + val); if (el) el.classList.add('visible'); }
+    updateSummary();
+  }
+
+  function updateSummary() {
+    const n = selected.size;
+    const type = document.getElementById('restrictionType');
+    const typeLabel = type.value ? type.options[type.selectedIndex].text : 'No restriction type chosen';
+    document.getElementById('summary').innerHTML =
+      `<strong>${n} shop${n !== 1 ? 's' : ''}</strong> selected &nbsp;·&nbsp; ${typeLabel}`;
+  }
+
+  function buildJSON() {
+    const type = document.getElementById('restrictionType').value;
+    const from = document.getElementById('dateFrom').value;
+    const to = document.getElementById('dateTo').value;
+
+    const base = {
+      request_id: 'REQ-' + Date.now(),
+      created_at: new Date().toISOString(),
+      shops: [...selected],
+      date_range: { from, until: to },
+      restriction_type: type,
+      restriction_details: {}
+    };
+
+    if (type === 'stop_sales') {
+      base.restriction_details = { action: 'stop_all_sales' };
+    } else if (type === 'stop_sale_product') {
+      const prod = document.querySelector('#fields-stop_sale_product select.field-input');
+      base.restriction_details = { product_definition: prod?.value || null };
+    } else if (type === 'booking_restriction') {
+      const inputs = document.querySelectorAll('#fields-booking_restriction input.field-input');
+      base.restriction_details = {
+        min_lead_time_days: inputs[0]?.value ? parseInt(inputs[0].value) : null,
+        min_booking_period_days: inputs[1]?.value ? parseInt(inputs[1].value) : null,
+        max_booking_period_days: inputs[2]?.value ? parseInt(inputs[2].value) : null
+      };
+    } else if (type === 'merchant_option') {
+      const cbs = document.querySelectorAll('#fields-merchant_option input[type="checkbox"]');
+      const labels = ['firstname','lastname','birthday','weight','height','shoe_size','skill'];
+      const mandatory = {};
+      cbs.forEach((cb, i) => { mandatory['persondata_' + labels[i] + '_mandatory'] = cb.checked; });
+      base.restriction_details = { person_data_overrides: mandatory };
+    }
+
+    return base;
+  }
+
+  function syntaxHighlight(obj) {
+    const json = JSON.stringify(obj, null, 2);
+    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, match => {
+      if (/^"/.test(match)) {
+        if (/:$/.test(match)) return `<span class="j-key">${match}</span>`;
+        return `<span class="j-str">${match}</span>`;
+      }
+      if (/true|false/.test(match)) return `<span class="j-bool">${match}</span>`;
+      if (/null/.test(match)) return `<span class="j-null">${match}</span>`;
+      return `<span class="j-num">${match}</span>`;
+    });
+  }
+
+  function resetForm() {
+    deselectAll();
+    document.getElementById('restrictionType').value = '';
+    document.querySelectorAll('.restriction-fields').forEach(f => f.classList.remove('visible'));
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value = '';
+    document.getElementById('jsonPanel').classList.remove('visible');
+    updateSummary();
+  }
+
+  async function handleRequest() {
+    if (selected.size === 0) { alert('Please select at least one shop.'); return; }
+    const type = document.getElementById('restrictionType').value;
+    if (!type) { alert('Please select a restriction type.'); return; }
+    const from = document.getElementById('dateFrom').value;
+    const to = document.getElementById('dateTo').value;
+    if (!from || !to) { alert('Please set a date range.'); return; }
+
+    const btn = document.querySelector('.btn-primary');
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Sending...';
+    btn.disabled = true;
+
+    lastJSON = buildJSON();
+
+    try {
+      await fetch('https://hook.eu1.make.com/5vzi3m5gyumi2ld0bywk7uo8b9lffbgv', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(lastJSON),
+        mode: 'no-cors'
+      });
+
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg> Request Sent!';
+      btn.style.background = '#16a34a';
+
+      setTimeout(() => {
+        resetForm();
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg> Request Restriction';
+        btn.style.background = '';
+        btn.disabled = false;
+      }, 3000);
+
+    } catch (err) {
+      alert('Error sending request. Please try again.');
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg> Request Restriction';
+      btn.disabled = false;
+    }
+  }
+
+  function copyJSON() {
+    if (!lastJSON) return;
+    navigator.clipboard.writeText(JSON.stringify(lastJSON, null, 2)).then(() => {
+      const btn = event.target.closest('.json-btn');
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Copied!';
+      setTimeout(() => btn.innerHTML = orig, 1800);
+    });
+  }
+
+
+</script>
+</body>
+</html>
